@@ -2,16 +2,68 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
 import sqlite3
+import os
+
+# Função para criar o banco de dados e as tabelas, caso não existam
+def criar_banco():
+    if not os.path.exists("banco.db"):
+        conn = sqlite3.connect("banco.db")
+        cursor = conn.cursor()
+
+        # Criar a tabela Usuario
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS Usuario (
+            ID INTEGER PRIMARY KEY,
+            Nome TEXT NOT NULL,
+            Senha TEXT NOT NULL
+        )
+        """)
+
+        # Criar a tabela Tipo
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS Tipo (
+            ID INTEGER PRIMARY KEY,
+            Descricao TEXT NOT NULL
+        )
+        """)
+
+        # Criar a tabela Contas
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS Contas (
+            ID INTEGER PRIMARY KEY,
+            Descricao TEXT NOT NULL,
+            Tipo INTEGER NOT NULL,
+            Valor REAL NOT NULL,
+            DataVencimento DATE NOT NULL,
+            UsuarioID INTEGER NOT NULL,
+            FOREIGN KEY (Tipo) REFERENCES Tipo(ID),
+            FOREIGN KEY (UsuarioID) REFERENCES Usuario(ID)
+        )
+        """)
+
+        # Inserir o usuário padrão "Admin"
+        cursor.execute("""
+        INSERT INTO Usuario (Nome, Senha)
+        VALUES (?, ?)
+        """, ("admin", "admin"))
+
+        conn.commit()
+        conn.close()
+        print("Banco de dados criado com sucesso!")
+    else:
+        print("Banco de dados já existe.")
 
 # Função para verificar login
 def verificar_login():
     nome = entrada_nome.get()
     senha = entrada_senha.get()
 
-    conn = sqlite3.connect("financeiro.db")
+    # Conectar ao banco de dados banco.db
+    conn = sqlite3.connect("banco.db")
     cursor = conn.cursor()
 
-    cursor.execute("SELECT * FROM usuarios WHERE nome = ? AND senha = ?", (nome, senha))
+    # Verificar se o usuário existe no banco
+    cursor.execute("SELECT * FROM Usuario WHERE Nome = ? AND Senha = ?", (nome, senha))
     resultado = cursor.fetchone()
 
     conn.close()
@@ -21,6 +73,9 @@ def verificar_login():
         # Aqui você pode chamar a próxima tela
     else:
         messagebox.showerror("Erro", "Nome ou senha inválidos!")
+
+# Criar o banco de dados, se necessário
+criar_banco()
 
 # Configurar a janela principal
 janela = tk.Tk()
